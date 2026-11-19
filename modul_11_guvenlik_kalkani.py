@@ -43,6 +43,8 @@ ACIL_YEDEK_KLASORU = os.path.join(_MODUL_DIZINI, "ar_acil_yedekler")
 VARSAYILAN_IZINLI_HOSTLAR = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
 GUVENLI_BULUT_SONEKLERI = (
     ".streamlit.app",
+    ".streamlit.io",
+    ".streamlitapp.com",
     ".app.github.dev",
     ".githubpreview.dev",
     ".hf.space",
@@ -338,7 +340,7 @@ def _istek_basliklarini_al() -> dict:
     return {}
 
 
-def sunucu_giris_katmani_kontrol(ek_izinli_hostlar: list = None, sadece_yerel_ag: bool = True) -> tuple:
+def sunucu_giris_katmani_kontrol(ek_izinli_hostlar: list = None, sadece_yerel_ag: bool = False) -> tuple:
     """
     Harici `ar_siber_guvenlik_datasi.json` kullanarak:
       1) Acil Kilit Modu (Fail-Closed) kontrolü
@@ -406,7 +408,6 @@ def sunucu_giris_katmani_kontrol(ek_izinli_hostlar: list = None, sadece_yerel_ag
                 with depo["kilit"]:
                     depo["istatistik"]["engellenen_sunucu"] += 1
                 guvenlik_olayi_kaydet(f"Yetkisiz Sunucu ({baslik_ad})", f"Değer: {deger} | IP: {istemci_ip}", "KRİTİK")
-                _tehdit_skoru_artir(istemci_ip, 40, f"Yetkisiz {baslik_ad}: {deger}")
                 return False, "🚫 Yetkisiz sunucu erişimi güvenlik katmanı tarafından engellendi.", istemci_bilgi
 
     return True, "Güvenli bağlantı doğrulandı.", istemci_bilgi
@@ -504,9 +505,7 @@ def girdi_guvenlik_ve_bug_kontrol(kullanici_girdisi: str, maks_uzunluk: int = No
                     with depo["kilit"]:
                         depo["istatistik"]["temizlenen_girdi"] += 1
                     guvenlik_olayi_kaydet(grup_adi, f"Engellenen desen tespit edildi (Uzunluk: {len(temiz)})", "KRİTİK")
-                    kilitlendi = _tehdit_skoru_artir(oturum_anahtari, ceza_puani, grup_adi)
-                    if kilitlendi:
-                        return False, "", "🔒 **Acil Koruma:** Güvenlik ihlali nedeniyle tüm veriler yedeklendi ve sistem erişime kapatıldı."
+                    # Saldırı girdisini anında engelle ve logla (bulutta yanlışlıkla tüm uygulamayı kilitlemez)
                     return False, "", "🛡️ **Siber Güvenlik Kalkanı:** İstek güvenlik politikasına aykırı bulunduğu için engellendi."
             except re.error:
                 continue
@@ -573,7 +572,7 @@ def guvenlik_studyosu_goster():
         st.markdown("#### 🔒 Sunucu & PIN Koruma Ayarları")
         st.session_state.guvenlik_sadece_yerel = st.toggle(
             "🌐 Başka Sunuculardan Girişi Engelle (Sadece Localhost & Yerel Ağ)",
-            value=st.session_state.get("guvenlik_sadece_yerel", True),
+            value=st.session_state.get("guvenlik_sadece_yerel", False),
         )
         st.session_state.guvenlik_pin_aktif = st.toggle(
             "🔑 Giriş PIN Kilidi (Aç / Kapat)",
